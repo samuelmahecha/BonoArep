@@ -99,36 +99,59 @@ public class CalcReflexBEServer {
     }
 
     public static String computeMathCommand(String command) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        // Parsear el comando y los parámetros
-        String methodName = command.substring(0, command.indexOf('('));
-        String paramsStr = command.substring(command.indexOf('(') + 1, command.indexOf(')'));
-        String[] paramArr = paramsStr.split(",");
+        // Dividir el comando en nombre del método y los parámetros
+        String methodName = command.split("\\(")[0];
+        String paramsString = command.split("\\(")[1].replace(")", "");
+        String[] params = paramsString.split(","); // separar los parámetros por comas
 
-        // Convertir los parámetros a Double
-        double[] params = new double[paramArr.length];
-        for (int i = 0; i < paramArr.length; i++) {
-            params[i] = Double.parseDouble(paramArr[i]);
+        if (methodName.equals("bbl")) {
+            // Convertir los parámetros a Double y aplicar bubble sort
+            double[] numbers = new double[params.length];
+            for (int i = 0; i < params.length; i++) {
+                numbers[i] = Double.parseDouble(params[i]);
+            }
+            // Aplicar bubble sort
+            bubbleSort(numbers);
+
+            // Convertir el resultado a String y devolverlo como JSON
+            StringBuilder sortedResult = new StringBuilder();
+            sortedResult.append("[");
+            for (int i = 0; i < numbers.length; i++) {
+                sortedResult.append(numbers[i]);
+                if (i < numbers.length - 1) {
+                    sortedResult.append(", ");
+                }
+            }
+            sortedResult.append("]");
+            return "{\"sorted\": " + sortedResult.toString() + "}";
+        } else {
+            // Reflexión para los comandos de la clase Math
+            Class c = Math.class;
+            Class[] parameterTypes = {double.class}; // en este caso solo manejamos un parámetro tipo double
+            Method m = c.getDeclaredMethod(methodName, parameterTypes);
+
+            // Convertir los parámetros a tipo Double y ejecutar el método
+            Object[] methodParams = {Double.parseDouble(params[0])};
+            String result = m.invoke(null, methodParams).toString();
+
+            return "{\"result\": " + result + "}";
         }
-
-        // Obtener el método usando reflexión
-        Class<?> c = Math.class;
-        Class<?>[] parameterTypes = new Class<?>[params.length];
-        for (int i = 0; i < params.length; i++) {
-            parameterTypes[i] = double.class; // se asumen todos los metodos son double
-        }
-
-        Method method = c.getDeclaredMethod(methodName, parameterTypes);
-
-        // Invocar el método con los parámetros proporcionados
-        Object result = method.invoke(null, (Object[]) convertToObjectArray(params));
-        return result.toString();
     }
+    public static void bubbleSort(double[] arr) {
+        int n = arr.length;
+        boolean swapped;
+        do {
+            swapped = false;
+            for (int i = 0; i < n - 1; i++) {
+                if (arr[i] > arr[i + 1]) {
 
-    private static Object[] convertToObjectArray(double[] params) {
-        Object[] objArr = new Object[params.length];
-        for (int i = 0; i < params.length; i++) {
-            objArr[i] = params[i];
-        }
-        return objArr;
+                    double temp = arr[i];
+                    arr[i] = arr[i + 1];
+                    arr[i + 1] = temp;
+                    swapped = true;
+                }
+            }
+            n--;
+        } while (swapped);
     }
 }
